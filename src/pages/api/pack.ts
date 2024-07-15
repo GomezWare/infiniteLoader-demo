@@ -11,7 +11,7 @@ export const GET: APIRoute = ({ request }) => {
     const searchParams = new URL(request.url).searchParams;
 
     if (searchParams.size === 0 || !searchParams.get('page') || isNaN(Number(searchParams.get('page'))))
-        return new Response(JSON.stringify({ error: "No URL params supplied or page is not a number" }), { status: 400, statusText: "Bad request" });
+        return new Response(JSON.stringify("Error: No URL params supplied or page is not a number"), { status: 400, statusText: "Bad request" });
 
     // Pagination of the data
     const pages = arraySplitter(data, itemsPerRequest);
@@ -19,6 +19,8 @@ export const GET: APIRoute = ({ request }) => {
     const requestedPage = Number(searchParams.get('page'));
 
     try {
+        if (requestedPage > pages.length) throw new Error("Out of array bonds");
+
         const response = {
             content: pages[requestedPage],
             requestedPage: requestedPage,
@@ -27,7 +29,7 @@ export const GET: APIRoute = ({ request }) => {
         }
 
         return new Response(JSON.stringify(response));
-    } catch (error) {
-        return new Response(JSON.stringify({ error: "Out of bonds" }), { status: 400, statusText: "Bad request" });
+    } catch (Error) {
+        return new Response(JSON.stringify(`${Error}`), { status: 400, statusText: "Bad request" });
     }
 }
