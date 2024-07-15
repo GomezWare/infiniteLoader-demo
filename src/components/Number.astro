@@ -1,0 +1,13 @@
+---
+interface Props {
+    number: number;
+}
+
+const { number } = Astro.props;
+---
+
+<div class="w-full flex justify-center items-center bg-slate-500 h-96">
+    <a href="https://www.example.org" class="text-white text-3xl">
+        {number}
+    </a>
+</div>

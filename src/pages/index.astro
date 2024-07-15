@@ -1,5 +1,7 @@
 ---
+import Number from "src/components/Number.astro";
 
+const firstPage = [0, 1, 2];
 ---
 
 <html lang="en">
@@ -8,9 +10,107 @@
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="viewport" content="width=device-width" />
 		<meta name="generator" content={Astro.generator} />
+		<link
+			rel="stylesheet"
+			href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css"
+		/>
 		<title>Astro</title>
 	</head>
 	<body>
-		<h1>Astro</h1>
+		<div x-data="numbersData">
+			<div
+				class="grid grid-cols-3 w-full container gap-4 mt-8 content-center"
+				x-ref="gridContainer"
+			>
+				{firstPage.map((number) => <Number number={number} />)}
+			</div>
+
+			<div class="mt-12">
+				<button
+					x-show="(currentPage < maxPage)"
+					@click="loadMoreNumbers()"
+					class="rounded p-5 text-center w-full bg-slate-400"
+					>Load more numbers</button
+				>
+			</div>
+		</div>
 	</body>
 </html>
+
+<script>
+	// @ts-nocheck
+	import Alpine from "alpinejs";
+	import Number from "src/components/Number.astro";
+
+	const getPage = async (page) => {
+		const requestedPage = await fetch(
+			"http://localhost:3000/api/pack?page=" + page,
+		).then((response) => {
+			return response.json();
+		});
+
+		return requestedPage;
+	};
+
+	const numbersData = () => ({
+		currentPage: 1,
+		maxPage: 0,
+		async init() {
+			window.addEventListener("beforeunload", (event) => {
+				console.log(this.currentPage);
+				sessionStorage.setItem(
+					"latestPage",
+					this.currentPage.toString(),
+				);
+				sessionStorage.setItem(
+					"scrollPosition",
+					window.scrollY.toString(),
+				);
+			});
+
+			const firstPage = await getPage(0);
+			this.maxPage = firstPage.maxPage;
+			if (sessionStorage.getItem("latestPage")) {
+				this.resumeFromSession();
+			}
+		},
+		async loadMoreNumbers() {
+			const requestedPage = await getPage(this.currentPage);
+			this.currentPage++;
+			this.renderNumbers(requestedPage.content);
+		},
+		async loadSpecificPage(page) {
+			const requestedPage = await getPage(page);
+			this.renderNumbers(requestedPage.content);
+		},
+		async resumeFromSession() {
+			for (
+				let i = this.currentPage;
+				i < parseInt(sessionStorage.getItem("latestPage"));
+				i++
+			) {
+				this.loadSpecificPage(i);
+				this.currentPage++;
+			}
+
+			const scroll = parseInt(localStorage.getItem("scrollPosition"));
+			window.scrollY = scroll;
+		},
+		renderNumbers(items) {
+			const gridContainer = this.$refs.gridContainer;
+			items.forEach((item) => {
+				const number = document.createElement("div");
+				number.innerHTML = `<div class="w-full flex justify-center items-center bg-slate-500 h-96">
+					<a href="https://www.example.org" class="text-white text-3xl">
+					${item}
+					</a>
+				</div>`;
+
+				gridContainer.appendChild(number.firstChild);
+			});
+		},
+	});
+
+	Alpine.data("numbersData", numbersData);
+	Alpine.start();
+</script>
